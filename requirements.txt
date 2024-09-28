@@ -1,0 +1,11 @@
+sqlalchemy 
+psycopg2 
+pandas
+python-dotenv
+pandas-profiling
+fastapi
+uvicorn
+pydantic==1.10.9
+sweetviz
+autoviz
+dtale
