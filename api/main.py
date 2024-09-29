@@ -1,59 +1,57 @@
+# main.py
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from sqlalchemy import create_engine, MetaData, Table
+from autoviz.AutoViz_Class import AutoViz_Class
 import pandas as pd
-import pandas_profiling
-import sweetviz
-import autoviz
-from dtale import show
-import sqlalchemy
+import json
+import os
+
+
+from dotenv import load_dotenv
+from sqlalchemy import func
+load_dotenv()
+# Access the environment variables
+DB_USER = os.getenv('DB_USER')
+DB_PASS =  os.getenv('DB_PASS')
+DB_SERVER = os.getenv('DB_SERVER')
+DB_PORT = os.getenv('DB_PORT')
+DB_NAME = os.getenv('DB_NAME')
+DB_TABLE_NAME = "debate"
+
+DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_SERVER}:{DB_PORT}/{DB_NAME}"
+
 
 app = FastAPI()
 
-# Configure CORS
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Adjust this to your React app's URL
+    allow_origins=["*"],  # Allows all origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
-class DBCredentials(BaseModel):
-    host: str
-    port: int
-    username: str
-    password: str
-    database: str
-    table: str
+# You'll need to set these environment variables
+DB_CONNECTION_STRING = os.environ.get("DB_CONNECTION_STRING")
 
-@app.post("/analyze")
-async def analyze_data(credentials: DBCredentials):
+DB_CONNECTION_STRING = DATABASE_URL
+TABLE_NAME = DB_TABLE_NAME
+
+@app.get("/analyze")
+async def analyze_data():
+    print("ANALYSE THE   DATA")
     try:
-        # Create database connection
-        engine = sqlalchemy.create_engine(
-            f"postgresql://{credentials.username}:{credentials.password}@{credentials.host}:{credentials.port}/{credentials.database}"
-        )
+        # Create SQLAlchemy engine
+        engine = create_engine(DB_CONNECTION_STRING)
         
-        # Read data from the specified table
-        query = f"SELECT * FROM {credentials.table}"
-        df = pd.read_sql(query, engine)
+        # Read the table into a pandas DataFrame
+        df = pd.read_sql_table(table_name=TABLE_NAME, con=engine,schema="squabble")
         
-        # Perform analysis using different libraries
-        results = {}
-        
-        # Pandas Profiling
-        profile = pandas_profiling.ProfileReport(df)
-        results['pandas_profiling'] = profile.to_json()
-        
-        # Sweetviz
-        sweet_report = sweetviz.analyze(df)
-        sweet_report.show_html()  # This will save the report as a file
-        results['sweetviz'] = 'sweetviz_report.html'  # You'll need to handle file serving
-        
-        # Autoviz
-        autoviz_report = autoviz.AutoViz_Class()
-        dft = autoviz_report.AutoViz(
+        # Perform EDA using AutoViz
+        AV = AutoViz_Class()
+        analysis_results = AV.AutoViz(
             filename="",
             sep=",",
             depVar="",
@@ -61,20 +59,20 @@ async def analyze_data(credentials: DBCredentials):
             header=0,
             verbose=0,
             lowess=False,
-            chart_format="html",
+            chart_format="svg",
             max_rows_analyzed=150000,
             max_cols_analyzed=30,
         )
-        results['autoviz'] = 'autoviz_report.html'  # You'll need to handle file serving
         
-        # D-Tale
-        d = show(df, return_instance=True)
-        results['dtale'] = d.main_url()
+        print(analysis_results)
+        # Convert the results to JSON
+        # json_results = json.dumps(analysis_results)
         
-        return results
+        return {"results": "demon dog"}
     except Exception as e:
+        print(str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8888)

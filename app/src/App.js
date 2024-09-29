@@ -1,60 +1,45 @@
-import React, { useState } from 'react';
+// App.js
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 function App() {
-  const [credentials, setCredentials] = useState({
-    host: '',
-    port: '',
-    username: '',
-    password: '',
-    database: '',
-    table: ''
-  });
-  const [results, setResults] = useState(null);
+  const [analysisResults, setAnalysisResults] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleInputChange = (e) => {
-    setCredentials({
-      ...credentials,
-      [e.target.name]: e.target.value
-    });
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get('http://localhost:8888/analyze');
+        setAnalysisResults(JSON.parse(response.data.results));
+      } catch (err) {
+        setError('Error fetching analysis results');
+        console.error(err);
+      }
+      setLoading(false);
+    };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await axios.post('http://localhost:8000/analyze', credentials);
-      setResults(response.data);
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
+    fetchData();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
+  if (!analysisResults) return <div>No data available</div>;
 
   return (
     <div className="App">
-      <h1>Exploratory Data Analysis</h1>
-      <form onSubmit={handleSubmit}>
-        <input name="host" placeholder="edgeblog2019-postgres.chkrgfabutfo.us-west-2.rds.amazonaws.com" onChange={handleInputChange} />
-        <input name="port" placeholder="5432" onChange={handleInputChange} />
-        <input name="username" placeholder="postgres" onChange={handleInputChange} />
-        <input name="password" placeholder="donedge23" type="password" onChange={handleInputChange} />
-        <input name="database" placeholder="real_estate_mogul" onChange={handleInputChange} />
-        <input name="table" placeholder="debate" onChange={handleInputChange} />
-        <button type="submit">Analyze</button>
-      </form>
-
-      {results && (
-        <div>
-          <h2>Analysis Results</h2>
-          <h3>Pandas Profiling</h3>
-          <pre>{JSON.stringify(results.pandas_profiling, null, 2)}</pre>
-          <h3>Sweetviz</h3>
-          <iframe src={results.sweetviz} width="100%" height="500px"></iframe>
-          <h3>Autoviz</h3>
-          <iframe src={results.autoviz} width="100%" height="500px"></iframe>
-          <h3>D-Tale</h3>
-          <iframe src={results.dtale} width="100%" height="500px"></iframe>
+      <h1>Exploratory Data Analysis Results</h1>
+      {Object.entries(analysisResults).map(([key, value]) => (
+        <div key={key}>
+          <h2>{key}</h2>
+          {typeof value === 'string' && value.startsWith('<svg') ? (
+            <div dangerouslySetInnerHTML={{ __html: value }} />
+          ) : (
+            <pre>{JSON.stringify(value, null, 2)}</pre>
+          )}
         </div>
-      )}
+      ))}
     </div>
   );
 }
