@@ -179,7 +179,7 @@ class DataSnapshot():
             # print(df.head())
 
             # Store the DataFrame into a SQL table called 'snapshots'
-            df.to_sql('snapshots', con=engine, if_exists='append', index=False)
+            df.to_sql('snapshots', con=self.storage_engine, if_exists='append', index=False)
             
             # if not db_exists:
             #     print(f"Database created at {db_path}")
@@ -432,24 +432,28 @@ class DataSnapshot():
 
         for current_table in self.tables:
 
+            # # check the latest dataset and determine if any thresholds have been breached 
             dataset_name = str(self.source_engine.url).split("/")[-1] + "." + self.schema +  "." + current_table
+
             df = pd.read_sql_table(table_name=current_table, con=self.source_engine,schema=SCHEMA)
 
             # #get the column aggregations.
             aggregate_df = self.get_column_aggregations(df, current_table)    
 
-            # #save the aggregate dataset. 
+            # #save the aggregate dataset. - save a snapshot
             stored = self.store_column_aggregations_results(aggregate_df)
 
-            # # Analyze and store thresholds of the dataset
+            # check for anomalies of the recent snapshot
+            print("first dataset check:")
+            self.dataset_check()
+
+            # create new thresholds - Analyze and store thresholds of the dataset
+            # outlier data is in the snapshots_threshold table
             analyzed = self.analyze_and_store_thresholds(stored)
 
-            print(analyzed.head())
-
-            # # check the latest dataset and determine if any thresholds have been breached 
-            # self.dataset_check(analyzed)
-
-
+            # check for anomalies of the recent snapshot
+            print("second dataset check:")
+            self.dataset_check()
 
 
 
