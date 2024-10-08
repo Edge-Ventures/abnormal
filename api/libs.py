@@ -10,6 +10,7 @@ from sqlalchemy import create_engine, MetaData, Table, func, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from dotenv import load_dotenv
+import time
 
 # Load environment variables
 load_dotenv()
@@ -38,7 +39,6 @@ class DataSnapshot():
 
     def get_column_aggregations(self, df, dataset_name):
         aggregations = []
-        print("DATASET NAME: ",dataset_name)
         for column in df.columns:
             data_type = df[column].dtype
             count = df[column].count()
@@ -460,14 +460,11 @@ class DataSnapshot():
 
 
 if __name__ == "__main__":
-
-    print("CONNECTION_STRING: ",CONNECTION_STRING)
-    print("TABLE_LIST: ",TABLE_LIST)
-    print("SCHEMA: ",SCHEMA)
-
     abnormal = DataSnapshot(connection_string=CONNECTION_STRING, tables=TABLE_LIST, schema=SCHEMA)
     print(abnormal)
-    print(abnormal.source_engine)
-    print(abnormal.storage_engine)
     print(abnormal.storage_database_name)
-    abnormal.monitor_tables()
+
+    while True:
+        abnormal.monitor_tables()
+        time.sleep(600)  # Sleep for 10 minutes
+

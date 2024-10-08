@@ -10,3 +10,20 @@ Data Integration Anomaly Detection Tools
 
 
 
+Create a db connection and choose the tables to monitor. 
+
+A sample result is : 
+
+<__main__.DataSnapshot object at 0x7fad102a9e80>
+./api/snapshots.db
+first dataset check:
+No breached values found.
+second dataset check:
+No breached values found.
+first dataset check:
+No breached values found.
+second dataset check:
+No breached values found.
+
+
+currently , only the lib library is used. The API is in progress and hasn't implmented the libs. 
